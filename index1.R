@@ -4,10 +4,11 @@ library(lubridate)
 require(rgl)
 require(akima)
 library(dplyr)
-
+library(DT)
 
 tripData <- read.csv("maturewithdate.csv")
 
+attemp3 <- read.csv("attemp3.csv")
 
 attemp2 <- read.csv("attemp2.csv")
 masterData = attemp2
@@ -53,7 +54,8 @@ ui <- fluidPage(
     textOutput("result1"),
     textOutput("result2"),
     textOutput("result3"),
-    textOutput("result4")
+    textOutput("result4"),
+    DT::dataTableOutput("stops")
   )
 )
 
@@ -117,7 +119,7 @@ server <- function(input, output, session) {
       testy_value <<- occ_data
       testx_value <<- stop_vector
       xy_dataframe <<- cbind(testx_value,testy_value)
-      junk_value  <<- junk_value +1
+      # junk_value  <<- junk_value + 1
       
       
       
@@ -143,10 +145,31 @@ server <- function(input, output, session) {
       s
     })
   
-  
- 
-  
-  
+  stopsTable <- reactive(
+    {
+      bus = attemp3[(attemp3$route == input$routeInput), c(3,4,5,6)]
+      
+      bus1 = bus[,c(1,3)]
+      bus2 = bus[,c(2,4)]
+      names(bus2) <- c("stopID","stop")
+      busFinal <<- rbind(bus1,bus2)
+      busFinal$stopID <- as.numeric(busFinal$stopID)
+      busFinal$stop <- as.character(busFinal$stop)
+      busData <<- busFinal
+      
+      max_stop = max(busFinal[1])
+      min_stop = min(busFinal[1])
+      
+      stopID <<- c(min_stop:max_stop)
+      busTemp = data.frame(stopID)
+      busTemp$stopID <- as.numeric(busTemp$stopID)
+      busTemp <<- busTemp
+      stopTable <- merge( busTemp, busData, by = "stopID")
+      stopTable <- unique(stopTable)
+      
+      stopTable
+    }
+  )
   
   output$result1 <- renderText({
     paste("You chose", junk()$y)
@@ -173,10 +196,14 @@ server <- function(input, output, session) {
   
   output$occ <- renderPlotly({
     #plot_ly(z = graph()$z) %>% add_surface()
-    # plot_ly( x = bus_occ()$vec1, y = bus_occ()$vec2, type = 'scatter', mode = 'lines')
+    #plot_ly( x = bus_occ()$vec1, y = bus_occ()$vec2, type = 'scatter', mode = 'lines')
     #plot_ly( data = xydf(),x = ~testx_value, y = ~testy_value, type = 'scatter', mode = 'lines')
     #plot_ly( x = xvalue(), y = yvalue(), type = 'scatter', mode = 'lines')
     plot_ly( x = graph()$a, y = graph()$b, type = 'scatter', mode = 'lines')
+  })
+  
+  output$stops <- renderDataTable({
+    stopsTable()
   })
 
 }
