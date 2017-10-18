@@ -9,6 +9,10 @@ library(DT)
 tripData <- read.csv("maturewithdate.csv")
 
 attemp3 <- read.csv("attemp3.csv")
+attemp3 = attemp3[,c(1,2,3,4,5,6)]
+attemp3 = na.omit(attemp3)
+attemp3 = attemp3[!attemp3$stopID=="",]
+attemp3 = attemp3[!attemp3$stopID.1=="",]
 
 attemp2 <- read.csv("attemp2.csv")
 masterData = attemp2
@@ -70,7 +74,8 @@ server <- function(input, output, session) {
   
   trip <- reactive(
     {
-      trips = sapply(tripData[(tripData$route_no == input$routeInput), c("count")], as.numeric)
+      # trips = sapply(tripData[(tripData$route_no == input$routeInput), c("count")], as.numeric)
+      trips = as.numeric(tripData[,4][tripData$route_no == input$routeInput])
       totalTrips <- sum(trips)
       totalTrips
     }
@@ -116,7 +121,7 @@ server <- function(input, output, session) {
       #my_func = function(x) (sum(mydata[6][mydata[3]==x]) - sum(mydata[6][mydata[4]==x]))
       
       occ_data = cumsum(sapply(stop_vector, function(x) (sum(mydata$passengers[mydata$from_stop_seq_no == x]) - sum(mydata$passengers[mydata$till_stop_seq_no == x]))))
-      testy_value <<- occ_data
+      testy_value <<- occ_data/trip()
       testx_value <<- stop_vector
       xy_dataframe <<- cbind(testx_value,testy_value)
       # junk_value  <<- junk_value + 1
@@ -134,7 +139,7 @@ server <- function(input, output, session) {
       # z = dump1[,3]
       x = dump1$from_stop_seq_no
       y = dump1$till_stop_seq_no
-      z = dump1$Total_Revenue
+      z = dump1$Total_Revenue/trip()
       s=interp( y, x, z)
       #s=interp( y, x, z,testx_value,testy_value)
       s = c(s,a = list(testx_value),b = list(testy_value))
@@ -148,7 +153,7 @@ server <- function(input, output, session) {
   stopsTable <- reactive(
     {
       bus = attemp3[(attemp3$route == input$routeInput), c(3,4,5,6)]
-      
+
       bus1 = bus[,c(1,3)]
       bus2 = bus[,c(2,4)]
       names(bus2) <- c("stopID","stop")
@@ -156,17 +161,17 @@ server <- function(input, output, session) {
       busFinal$stopID <- as.numeric(busFinal$stopID)
       busFinal$stop <- as.character(busFinal$stop)
       busData <<- busFinal
-      
+
       max_stop = max(busFinal[1])
       min_stop = min(busFinal[1])
-      
+
       stopID <<- c(min_stop:max_stop)
       busTemp = data.frame(stopID)
       busTemp$stopID <- as.numeric(busTemp$stopID)
       busTemp <<- busTemp
       stopTable <- merge( busTemp, busData, by = "stopID")
       stopTable <- unique(stopTable)
-      
+
       stopTable
     }
   )
